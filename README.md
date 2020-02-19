@@ -1,4 +1,4 @@
-# Project 1: Learning C with an Application
+# nucleus: a diy text editor
 
 # Authors
 
