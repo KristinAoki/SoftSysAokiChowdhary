@@ -1,4 +1,10 @@
 #include <unistd.h>
+#include <termios.h>
+
+void enableRawMode() {
+  
+  raw.c_lflag &= ~(ECHO);
+}
 
 int main() {
   char c;
