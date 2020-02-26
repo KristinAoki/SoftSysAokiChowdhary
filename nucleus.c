@@ -22,17 +22,25 @@ void enableRawMode() {
   // Essentially copies the attributes of the current terminal
   // (before enabling raw mode)
   struct termios raw = orig_termios;
-  /* Turns off the appropriate flags by modifying the structure.
-  Specifically, turns off the appropriate "local flags", or basically
+  /* Turns off the appropriate flags by modifying the structure.*/
+  /*Specifically, turns off the appropriate "local flags", or basically
   miscellaneous flags.
   Turns off the automatic responses to special characters (like CTRL+C and CTRL+Z) by turning off the ISIG
   Turns off the displaying of characters being typed on the terminal by turning off ECHO
   Fun fact!/realization! sudo also turns ECHO off.
-  Turns off canonical mode by turning off ISCANON
+  Turns off canonical mode by turning off ISCANON.
+  Turns off automatic responses to characters like CTRL+V and CTRL+O by turning
+  IEXTEN off.
   &= is a bitwise and assignment. By using the bitwise-NOT operator (~), we can
   turn these bitflags off, and then by using the bitwise-AND assignment, we can
   flip the bits corresponding to these flags and retain the other bits. */
-  raw.c_lflag &= ~(ECHO | ICANON | ISIG);
+  raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
+  /* Similar to the process of updating the local flags, turns off of the
+  appropriate input flags.
+  Turns off responses to CTRL+S and CTRL+Q by turnign off IXON controls the
+  pausing and resuming of transmission (which is also what CTRL+S and CTRL+Q control).
+  Fixes CTRL+M by preventing the terminal from translating carriage returns to new line.*/
+  raw.c_iflag &= ~(IXON | ICRNL);
 
   // Updates the terminal characteristics
   /* Resets the pointer to the termios object (which represents
