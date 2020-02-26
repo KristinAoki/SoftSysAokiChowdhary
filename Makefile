@@ -1,2 +1,2 @@
 nucleus: nucleus.c
-	$(CC) nucleus.c -o nucleus -Wall -Wextra -pedantic -std=c99
+	gcc nucleus.c -o nucleus && ./nucleus
