@@ -1,4 +1,4 @@
-# nucleus: a diy text editor 
+# nucleus: a diy text editor
 
 # Project Goal
 
@@ -15,6 +15,9 @@ Kristin: My learning goals are to become more comfortable programming in C and t
 ## Resources
 
 The main resource we're planning to utilize throughout this project is this tutorial: [Kilo Build Your Own Text Editor](https://viewsourcecode.org/snaptoken/kilo/index.html). This tutorial presents a more fully-formed version of what we could achieve, but we can take inspiration from it and use it to guide us.
+
+Other resources that we will consult (related to the tutorial):
+* [Documentation for the termios struct](http://man7.org/linux/man-pages/man3/termios.3.html)
 
 ## First Steps
 1. Read through the Kilo tutorial and gain understanding of the different parts
