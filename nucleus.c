@@ -3,15 +3,25 @@
 #include <termios.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <errno.h>
 
 // Structure to represent the terminal
 struct termios orig_termios;
+
+void die(const char *s) {
+  // prints descriptive error message for the gloabl errno variable,
+  // that is set when something fails
+  perror(s);
+  exit(1);
+}
 
 /*
 Restores the attributes of the terminal to the original state.
 */
 void disableRawMode() {
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
+    die("tcsetattr");
+  }
 }
 
 /*
@@ -19,7 +29,7 @@ Changes the attributes of the terminal to enable raw mode.
 */
 void enableRawMode() {
   // Gets the attributes of the current terminal
-  tcgetattr(STDIN_FILENO, &orig_termios);
+  if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) die("tcgetattr");
   // Makes sure to disable raw mode and return terminal to original state on exit
   atexit(disableRawMode);
 
@@ -43,7 +53,7 @@ void enableRawMode() {
   raw.c_cc[VTIME] = 1;
 
   // Updates the terminal characteristics
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw)) die("tcsetattr");
 }
 
 int main() {
@@ -55,7 +65,7 @@ int main() {
   // while the user hasn't pressed q
   while (1) {
     char c = '\0';
-    read(STDIN_FILENO, &c, 1);
+    if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN) die("read");
     // If the character is a control character, then we don't want to print it
     if (iscntrl(c)) {
       printf("%d\r\n", c);
