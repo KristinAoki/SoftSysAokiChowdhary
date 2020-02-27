@@ -36,12 +36,20 @@ void enableRawMode() {
   flip the bits corresponding to these flags and retain the other bits. */
   raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
   /* Similar to the process of updating the local flags, turns off of the
-  appropriate input flags.
+  appropriate input flags. Last three flags are do not really have a purpose,
+  nothing beside it what is pre-determined by the text editor gods.
   Turns off responses to CTRL+S and CTRL+Q by turnign off IXON controls the
   pausing and resuming of transmission (which is also what CTRL+S and CTRL+Q control).
   Fixes CTRL+M by preventing the terminal from translating carriage returns to new line.*/
-  raw.c_iflag &= ~(IXON | ICRNL);
+  raw.c_iflag &= ~(IXON | ICRNL | BRKINT | INPCK | ISTIP);
 
+  raw.c_oflag &= ~(OPOST);
+  //Making sure character size is 8 bits per byte.
+  raw.c_cflag |= (CS8);
+
+  raw.c_cc[VMIN] = 0;
+  //Time counted in tenths of a second.
+  raw.c_cc[VTIME] = 1;
   // Updates the terminal characteristics
   /* Resets the pointer to the termios object (which represents
   the characteristics of the terminal) to raw, the termios object we created
@@ -64,16 +72,15 @@ int main() {
   char c;
   // Keeps reading while there are more bytes to read and
   // while the user hasn't pressed q
-  while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q') {
+  while (1) {
+    
     // If the character is a control character, then we don't want to print it
     if (iscntrl(c)) {
-      printf("%d\n", c);
+      printf("%d\r\n", c);
     // Otherwise, print the ASCII code of the character and the character itself
     } else {
-      printf("%d ('%c')\n", c,c);
+      printf("%d ('%c')\r\n", c,c);
     }
   }
   return 0;
 }
-
-//Why is CRT+M = 10, not 13. CRT+J = 10. <--- Shreya couldn't figure this out either, so we should ask Steve!
