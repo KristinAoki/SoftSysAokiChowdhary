@@ -53,6 +53,11 @@ that has been received but not read has been discarded (hence FLUSH).
 ## main
 
 ```
+  C #define CTRL_KEY(k) ((k) & 0x1f)
+```
+The CTRL_KEY macro is constructed through a bitwise-AND operation. We bitwise-AND whatever character is received with 0x1f, which is b00011111. This sets the upper bits of the character to be 0 and preserves the other bits, effectively mirroring the effect of the CTRL key.
+
+```
   C read(STDIN_FILENO, &c, 1);
 ```
 Read user input one byte at a time into character c.
