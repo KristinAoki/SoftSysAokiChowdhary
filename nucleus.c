@@ -7,12 +7,16 @@
 // Structure to represent the terminal
 struct termios orig_termios;
 
+/*
+Restores the attributes of the terminal to the original state.
+*/
 void disableRawMode() {
-  // Sets the attributes of the terminal to the original terminal to restore
-  // the original state.
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
 }
 
+/*
+Changes the attributes of the terminal to enable raw mode.
+*/
 void enableRawMode() {
   // Gets the attributes of the current terminal
   tcgetattr(STDIN_FILENO, &orig_termios);
@@ -22,41 +26,23 @@ void enableRawMode() {
   // Essentially copies the attributes of the current terminal
   // (before enabling raw mode)
   struct termios raw = orig_termios;
-  /* Turns off the appropriate flags by modifying the structure.*/
-  /*Specifically, turns off the appropriate "local flags", or basically
-  miscellaneous flags.
-  Turns off the automatic responses to special characters (like CTRL+C and CTRL+Z) by turning off the ISIG
-  Turns off the displaying of characters being typed on the terminal by turning off ECHO
-  Fun fact!/realization! sudo also turns ECHO off.
-  Turns off canonical mode by turning off ISCANON.
-  Turns off automatic responses to characters like CTRL+V and CTRL+O by turning
-  IEXTEN off.
-  &= is a bitwise and assignment. By using the bitwise-NOT operator (~), we can
-  turn these bitflags off, and then by using the bitwise-AND assignment, we can
-  flip the bits corresponding to these flags and retain the other bits. */
-  raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
-  /* Similar to the process of updating the local flags, turns off of the
-  appropriate input flags. Last three flags are do not really have a purpose,
-  nothing beside it what is pre-determined by the text editor gods.
-  Turns off responses to CTRL+S and CTRL+Q by turnign off IXON controls the
-  pausing and resuming of transmission (which is also what CTRL+S and CTRL+Q control).
-  Fixes CTRL+M by preventing the terminal from translating carriage returns to new line.*/
-  raw.c_iflag &= ~(IXON | ICRNL | BRKINT | INPCK | ISTIP);
 
+  /* Turns off the appropriate flags by modifying the structure.*/
+  // Turns off appropriate miscellaneous flags
+  raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
+  // Turns off appropriate input mode flags
+  raw.c_iflag &= ~(IXON | ICRNL | BRKINT | INPCK | ISTRIP);
+  // Turn off all output processing
   raw.c_oflag &= ~(OPOST);
   //Making sure character size is 8 bits per byte.
   raw.c_cflag |= (CS8);
 
+  // Set timeout
   raw.c_cc[VMIN] = 0;
   //Time counted in tenths of a second.
   raw.c_cc[VTIME] = 1;
+
   // Updates the terminal characteristics
-  /* Resets the pointer to the termios object (which represents
-  the characteristics of the terminal) to raw, the termios object we created
-  which has the updated characteristics of raw mode.
-  The TCSAFLUSH parameter means that these changes will only occur after all
-  the output from STDIN_FILENO has been transmitted appropriately and all input
-  that has been received but not read has been discarded (hence FLUSH).*/
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
@@ -65,15 +51,11 @@ int main() {
   each keypress as it comes in */
   enableRawMode();
 
-  /* Read user input one byte at a time into character c.
-  Reads from standard input but considers standard input like a file, so
-  that we can use the read() function to determine if there are still any
-  unread bytes in the file */
-  char c;
   // Keeps reading while there are more bytes to read and
   // while the user hasn't pressed q
   while (1) {
-    
+    char c = '\0';
+    read(STDIN_FILENO, &c, 1);
     // If the character is a control character, then we don't want to print it
     if (iscntrl(c)) {
       printf("%d\r\n", c);
@@ -81,6 +63,7 @@ int main() {
     } else {
       printf("%d ('%c')\r\n", c,c);
     }
+    if (c == 'q') break;
   }
   return 0;
 }
