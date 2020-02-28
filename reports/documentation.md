@@ -85,8 +85,7 @@ if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
   return 0;
 }
 ```
-TIOCGWINSZ stands for Terminal IOCtl (IOCtl = Input/Output/Control) Get Window Size. If the ioctl command is successful, then the winsize struct is updated with the number of columns and rows of the editor. Otherwise, the function returns a -1.
-
+TIOCGWINSZ stands for Terminal IOCtl (IOCtl = Input/Output/Control) Get Window Size. If the ioctl command is successful, then the winsize struct (ws) is updated with the number of columns and rows of the editor. Otherwise, the function returns a -1.
 
 ## abAppend and abFree
 
