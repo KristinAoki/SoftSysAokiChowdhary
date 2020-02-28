@@ -49,13 +49,7 @@ which has the updated characteristics of raw mode.
 the output from STDIN_FILENO has been transmitted appropriately and all input
 that has been received but not read has been discarded (hence FLUSH).
 
-
-## main
-
-```
-  C #define CTRL_KEY(k) ((k) & 0x1f)
-```
-The CTRL_KEY macro is constructed through a bitwise-AND operation. We bitwise-AND whatever character is received with 0x1f, which is b00011111. This sets the upper bits of the character to be 0 and preserves the other bits, effectively mirroring the effect of the CTRL key.
+## editorReadKey and editorProcessKeypress
 
 ```
   C read(STDIN_FILENO, &c, 1);
@@ -64,3 +58,50 @@ Read user input one byte at a time into character c.
 Reads from standard input but considers standard input like a file, so
 that we can use the read() function to determine if there are still any
 unread bytes in the file.
+
+```
+  C #define CTRL_KEY(k) ((k) & 0x1f)
+```
+The CTRL_KEY macro is constructed through a bitwise-AND operation. We bitwise-AND whatever character is received with 0x1f, which is b00011111. This sets the upper bits of the character to be 0 and preserves the other bits, effectively mirroring the effect of the CTRL key.
+
+## editorRefreshScreen
+
+```
+  C write(STDOUT_FILENO, "\x1b[2J", 4);
+  write(STDOUT_FILENO, "\x1b[H", 3);
+```
+
+@TODO: Kristin document this!
+
+## getWindowSize
+
+```
+C struct winsize ws;
+if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+  return -1;
+} else {
+  *cols = ws.ws_col;
+  *rows = ws.ws_row;
+  return 0;
+}
+```
+TIOCGWINSZ stands for Terminal IOCtl (IOCtl = Input/Output/Control) Get Window Size. If the ioctl command is successful, then the winsize struct is updated with the number of columns and rows of the editor. Otherwise, the function returns a -1.
+
+
+## abAppend and abFree
+
+```
+C void abAppend(struct abuf *ab, const char *s, int len) {
+  char *new = realloc(ab->b, ab->len + len);
+  if (new == NULL) return;
+  memcpy(&new[ab->len], s, len);
+  ab->b = new;
+  ab->len += len;
+}
+
+void abFree(struct abuf *ab) {
+  free(ab->b);
+}
+```
+
+We define `abuf`, a struct that consists of a pointer to our buffer in memory and a length. When we want to append a string to `abuf`, first we have to allocate enough memory to hold the string. The `realloc` function takes a pointer to the current string and the new size, which the length of the string currently in `abuf` plus the length of the new string we are adding in. `realloc` will deallocate the memory allocated to the current string in `abuf` and return a pointer to a new object that has the specified size. We copy the new string s to the end of the current data in the buffer, and then update the pointers and length of the `abuf`. Afterwards,`abFree` deallocates the memory that was allocated by `abuf`.
