@@ -1,7 +1,7 @@
 (aka Shreya needs a place to put her excessive commenting/notes)
 
 ## enableRawMode
-```c
+```C
   raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
 ```
 This statement turns off the appropriate flags to enable raw mode. `raw` is the copy of `orig_termios`, the `termios` structure that represents the original characteristics of the terminal. One of the fields of the `termios` struct is `c_lflag`, which basically encapsulates all of the miscellaneous flags. These flags include:
