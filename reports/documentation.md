@@ -104,3 +104,5 @@ void abFree(struct abuf *ab) {
 ```
 
 We define `abuf`, a struct that consists of a pointer to our buffer in memory and a length. When we want to append a string to `abuf`, first we have to allocate enough memory to hold the string. The `realloc` function takes a pointer to the current string and the new size, which the length of the string currently in `abuf` plus the length of the new string we are adding in. `realloc` will deallocate the memory allocated to the current string in `abuf` and return a pointer to a new object that has the specified size. We copy the new string s to the end of the current data in the buffer, and then update the pointers and length of the `abuf`. Afterwards,`abFree` deallocates the memory that was allocated by `abuf`.
+
+`->` allows the pointer created in `abuf` to be accessed in the  `abAppend` function and set to the input from the function.
