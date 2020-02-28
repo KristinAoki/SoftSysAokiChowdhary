@@ -132,8 +132,7 @@ void editorProcessKeypress() {
 /*** output ***/
 void editorDrawRows(struct abuf *ab) {
   // Draw a column of tildes on the lefthand side of the screen
-  int y;
-  for (y = 0; y < E.screenRows; y++) {
+  for (int y = 0; y < E.screenRows; y++) {
     abAppend(ab, "~", 1);
 
     if (y < E.screenRows - 1) {
