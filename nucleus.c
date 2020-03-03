@@ -13,6 +13,13 @@
 #define ABUF_INIT {NULL, 0}
 #define NUCLEUS_VERSION "0.0.1"
 
+enum editorKey {
+  ARROW_LEFT = 1000,
+  ARROW_RIGHT,
+  ARROW_UP,
+  ARROW_DOWN
+};
+
 /*** data ***/
 // Structure to represent the editor state
 typedef struct editorConfig {
@@ -96,31 +103,39 @@ void enableRawMode() {
 /*
 Waits for one key press and returns it.
 */
-char editorReadKey() {
+int editorReadKey() {
   int nread;
   char c;
   while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
     if (nread == -1 && errno != EAGAIN) die("read");
   }
 
+  // NOT EXACTLY SURE WHAT THIS IS DOING???
   // Check if c is equal to the escape sequence
   if (c == '\x1b') {
     char seq[3];
 
-    // Check the first two elements in the character array seq
+    /* Check the first two elements in the character array seq and sees if they
+       are false. */
     if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
     if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
 
     if (seq[0] == '[') {
       switch (seq[1]) {
-        case 'A': return 'w';
-        case 'B': return 's';
-        case 'C': return 'd';
-        case 'D': return 'a';
+        /* the cases are the values used to code for arrow key values
+          A = the up arrow
+          B = the down arrow
+          C = the right arrow
+          D = the left arrow
+        */
+        case 'A': return ARROW_UP;
+        case 'B': return ARROW_DOWN;
+        case 'C': return ARROW_RIGHT;
+        case 'D': return ARROW_LEFT;
       }
     }
 
-    return '\x1b'
+    return '\x1b';
   } else{
   return c;
   }
@@ -138,19 +153,19 @@ int getWindowSize(int *rows, int *cols) {
 }
 
 /*** input ***/
-void editorMoveCursor(char key) {
+void editorMoveCursor(int key) {
   switch (key) {
     // Determine which was to more cursor depending on which key you press.
-    case 'a':
+    case ARROW_LEFT:
       E.cx--;
       break;
-    case 'd':
+    case ARROW_RIGHT:
       E.cx++;
       break;
-    case 'w':
+    case ARROW_UP:
       E.cy--;
       break;
-    case 's':
+    case ARROW_DOWN:
       E.cy++;
       break;
   }
@@ -159,7 +174,7 @@ void editorMoveCursor(char key) {
 Waits for one key press and handles it.
 */
 void editorProcessKeypress() {
-  char c = editorReadKey();
+  int c = editorReadKey();
   switch (c) {
     case CTRL_KEY('q'):
       write(STDOUT_FILENO, "\x1b[2J", 4);
@@ -167,10 +182,10 @@ void editorProcessKeypress() {
       exit(0);
       break;
     // Moves cursor around depending on which key (wsad) you press
-    case 'w':
-    case 's':
-    case 'a':
-    case 'd':
+    case ARROW_UP:
+    case ARROW_DOWN:
+    case ARROW_LEFT:
+    case ARROW_RIGHT:
       editorMoveCursor(c);
       break;
   }
