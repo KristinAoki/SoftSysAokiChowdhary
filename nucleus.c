@@ -157,16 +157,28 @@ void editorMoveCursor(int key) {
   switch (key) {
     // Determine which was to more cursor depending on which key you press.
     case ARROW_LEFT:
-      E.cx--;
+      // Check if you are at the left edge of window
+      if (E.cx != 0) {
+        E.cx--;
+      }
       break;
     case ARROW_RIGHT:
+      // Check if you are at the right edge of window
+      if (E.cx != E.screenCols - 1) {
       E.cx++;
+      }
       break;
     case ARROW_UP:
-      E.cy--;
+      // Check if you are at the top of the window
+      if (E.cy != 0) {
+        E.cy--;
+      }
       break;
     case ARROW_DOWN:
-      E.cy++;
+      // Check if you are at the bottom of the window
+      if (E.cy != E.screenRows - 1) {
+        E.cy++;
+      }
       break;
   }
 }
