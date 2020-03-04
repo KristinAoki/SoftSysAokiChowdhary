@@ -1,7 +1,7 @@
 (aka Shreya needs a place to put her excessive commenting/notes)
 
 ## enableRawMode
-```C
+```
   raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
 ```
 This statement turns off the appropriate flags to enable raw mode. `raw` is the copy of `orig_termios`, the `termios` structure that represents the original characteristics of the terminal. One of the fields of the `termios` struct is `c_lflag`, which basically encapsulates all of the miscellaneous flags. These flags include:
@@ -105,3 +105,18 @@ void abFree(struct abuf *ab) {
 ```
 
 We define `abuf`, a struct that consists of a pointer to our buffer in memory and a length. When we want to append a string to `abuf`, first we have to allocate enough memory to hold the string. The `realloc` function takes a pointer to the current string and the new size, which the length of the string currently in `abuf` plus the length of the new string we are adding in. `realloc` will deallocate the memory allocated to the current string in `abuf` and return a pointer to a new object that has the specified size. We copy the new string s to the end of the current data in the buffer, and then update the pointers and length of the `abuf`. Afterwards,`abFree` deallocates the memory that was allocated by `abuf`.
+
+# editorDrawRows
+
+```
+abAppend(ab, "\x1b[K", 3);
+```
+The escape sequence could accept additional commands to set exactly how the line would be erased. A 2 would erase the whole line, while 1 would erase the part of the line to the left of the cursor, and a 0 would erase the part of the line to the right of the cursor. We wanted a normal line erase, so we wanted setting 0, which is also the default setting, which is why we just used `<esc>[K]`.
+
+```
+int welcomelen = snprintf(welcome, sizeof(welcome), "Nucleus Editor -- version %s", NUCLEUS_VERSION);
+if (welcomelen > E.screenCols) {
+  welcomelen = E.screenCols;
+}
+```
+`snprintf` is a special version of `printf` that comes from `<stdio.h>`. It formats and stores a series of characters and values in the array buffer. The first argument is the buffer, the second is the size or the maximum number of characters, and the last two arguments are the format strings. Here, we use `snprintf` to fill the `welcome` string buffer with the welcome message. In the process, we also get the length of the string, which is helpful in displaying it later. THe condition that follows truncates the length of the string in case the terminal is too small to fit the welcome message.

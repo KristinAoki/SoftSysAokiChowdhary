@@ -258,6 +258,8 @@ void editorProcessKeypress() {
 void editorDrawRows(struct abuf *ab) {
 
   for (int y = 0; y < E.screenRows; y++) {
+
+    // TODO: Factor out into separate function?
     // Display welcome message for users
     if (y == E.screenRows/3) {
       char welcome[80];
@@ -266,6 +268,7 @@ void editorDrawRows(struct abuf *ab) {
       if (welcomelen > E.screenCols) {
         welcomelen = E.screenCols;
       }
+
       // Center welcome message
       // Find the center of the screen
       int padding = (E.screenCols - welcomelen)/2;
