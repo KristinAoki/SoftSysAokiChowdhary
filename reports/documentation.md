@@ -1,7 +1,7 @@
 (aka Shreya needs a place to put her excessive commenting/notes)
 
 ## enableRawMode
-```C
+```
   raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
 ```
 This statement turns off the appropriate flags to enable raw mode. `raw` is the copy of `orig_termios`, the `termios` structure that represents the original characteristics of the terminal. One of the fields of the `termios` struct is `c_lflag`, which basically encapsulates all of the miscellaneous flags. These flags include:
@@ -73,6 +73,14 @@ The `CTRL_KEY` macro is constructed through a bitwise-AND operation. We bitwise-
 
 @TODO: Kristin document this!
 
+```
+char buf[32];
+snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy +1, E.cx + 1 );
+abAppend(&ab, buf, strlen(buf));
+```
+We convert the position of the cursor from 0-indexed values to 1-indexed
+values, and send the new positions to the cursor position command (the H command).
+
 ## getWindowSize
 
 ```
@@ -105,3 +113,27 @@ void abFree(struct abuf *ab) {
 ```
 
 We define `abuf`, a struct that consists of a pointer to our buffer in memory and a length. When we want to append a string to `abuf`, first we have to allocate enough memory to hold the string. The `realloc` function takes a pointer to the current string and the new size, which the length of the string currently in `abuf` plus the length of the new string we are adding in. `realloc` will deallocate the memory allocated to the current string in `abuf` and return a pointer to a new object that has the specified size. We copy the new string s to the end of the current data in the buffer, and then update the pointers and length of the `abuf`. Afterwards,`abFree` deallocates the memory that was allocated by `abuf`.
+
+# editorDrawRows
+
+```
+abAppend(ab, "\x1b[K", 3);
+```
+The escape sequence could accept additional commands to set exactly how the line would be erased. A 2 would erase the whole line, while 1 would erase the part of the line to the left of the cursor, and a 0 would erase the part of the line to the right of the cursor. We wanted a normal line erase, so we wanted setting 0, which is also the default setting, which is why we just used `<esc>[K]`.
+
+```
+int welcomelen = snprintf(welcome, sizeof(welcome), "Nucleus Editor -- version %s", NUCLEUS_VERSION);
+if (welcomelen > E.screenCols) {
+  welcomelen = E.screenCols;
+}
+```
+`snprintf` is a special version of `printf` that comes from `<stdio.h>`. It formats and stores a series of characters and values in the array buffer. The first argument is the buffer, the second is the size or the maximum number of characters, and the last two arguments are the format strings. Here, we use `snprintf` to fill the `welcome` string buffer with the welcome message. In the process, we also get the length of the string, which is helpful in displaying it later. THe condition that follows truncates the length of the string in case the terminal is too small to fit the welcome message.
+
+## General notes about escape sequences
+* Escape sequences are sequences of characters that does not represent itself when used inside a character or string literal, but is translated into another character or a sequence of characters that is difficult/impossible to represent directly. (from the Wikipedia Article)
+* `\n` is an escape sequence, because it does not stand for a backslash followed by the letter n. Instead, the backlash causes can "escape" from the normal way characters are interpreted, and leads the compiler to expect another character to complete the escape sequence.
+* The main escape sequence that we're using is `\xhh`, which gives you the byte whose numerical value is given by `hh` interpreted as a hexadecimal number. So for example, `\x12` represents a single character with value `0x12` or 18.
+* In this project, we use VT100 escape sequences, which are supported widely by most modern terminal emulators. The structure of a VT100 escape sequence is as follows: an escape sequence (like `\x`), a `[`, a paramter string (often a combination of numbers and letters), and the final character. Some of the escape sequences we utilized were:
+  * `<esc>[2J`, or the erase in display command - to clear the screen. The parameter string for this command is a number and the letter J. The number is either 0, 1, or 2, and controls where the cursor starts when clearing the sceen. 0 would clear from the cursor to the end of the screen (and is the default command), 1 would clear the screen up to where the cursor is, and 2 would clear the entire screen. We use this escape sequence in the `editorRefreshScreen()` function, so it makes sense to set the numerical parameter to 2.
+  * `<esc>[K`, or the erase in line command - to erase one line at a time. Like the J command, this command's parameter string is also a number and the letter K. The numerical parameter also functions similarly: 2 would erase the whole line, 1 would erase the part of the line to the left of the cursor, and 0 erases the part of the line to the right of the cursor (which is the type of deletion we want). Because 0 is the default argument, we can leave out the argument: `<esc>[K`.
+  * `<esc>[H`, or the cursor position command. The parameter string for this command is two numbers separated by a ; and H. The first numerical parameter specifies the line position (the row number) and the second specifies the column position (the column number). The default arguments are 1, so we can set the cursor to the first row and first column by leaving them out.
