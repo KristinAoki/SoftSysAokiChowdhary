@@ -13,6 +13,7 @@
 #define ABUF_INIT {NULL, 0}
 #define NUCLEUS_VERSION "0.0.1"
 
+// enum to define constants for the arrow keys, etc
 enum editorKey {
   ARROW_LEFT = 1000,
   ARROW_RIGHT,
@@ -27,20 +28,26 @@ enum editorKey {
 
 /*** data ***/
 // Structure to represent the editor state
+/* struct fields:
+- struct termios orig_termios - termios object that represents the terminal
+- int screenRows - the number of rows on the screen
+- int screenCols - the number of columns on the screen
+- int cx, cy - the x & y coordinates of the cursor
+*/
 typedef struct editorConfig {
   // Structure to represent the terminal
   struct termios orig_termios;
   int screenRows;
   int screenCols;
   int cx, cy;
-} editor;
+} Editor;
 
-editor E;
+Editor E;
 
-struct abuf {
+typedef struct abuf {
   char *b;
   int len;
-};
+} Abuf;
 
 /*** terminal ***/
 void die(const char *s) {
@@ -53,7 +60,7 @@ void die(const char *s) {
   exit(1);
 }
 
-void abAppend(struct abuf *ab, const char *s, int len) {
+void abAppend(Abuf *ab, const char *s, int len) {
   char *new = realloc(ab->b, ab->len + len);
   if (new == NULL) return;
   memcpy(&new[ab->len], s, len);
@@ -115,24 +122,28 @@ int editorReadKey() {
     if (nread == -1 && errno != EAGAIN) die("read");
   }
 
-  // NOT EXACTLY SURE WHAT THIS IS DOING???
-  // Check if c is equal to the escape sequence
+  // Checks for start of an escape character
   if (c == '\x1b') {
     char seq[3];
 
-    /* Check the first two elements in the character array seq and sees if they
-       are false. */
+    /* ead the next two bytes into the seq buffer, and return the Escape key
+    if either of these reads times out (assuming that the user pressed the
+  Escape key). */
     if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
     if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
 
+    // Check for arrow key escape sequence
     if (seq[0] == '[') {
       if (seq[0] >= '0' && seq[1] <= '9') {
+        // Attempt to read another byte and if there's nothing,
+        // assume escape key
         if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
         if (seq[2] =='~') {
           switch (seq[1]) {
             case '1': return HOME_KEY;
             case '3': return DELETE_KEY;
             case '4': return END_KEY;
+            // PAGE_UP and PAGE_DOWN = <esc>[5~, <esc>[6~
             case '5': return PAGE_UP;
             case '6': return PAGE_DOWN;
             // WHY DO I ADD THESE TWICE????
@@ -255,11 +266,10 @@ void editorProcessKeypress() {
 }
 
 /*** output ***/
-void editorDrawRows(struct abuf *ab) {
+void editorDrawRows(Abuf *ab) {
 
   for (int y = 0; y < E.screenRows; y++) {
 
-    // TODO: Factor out into separate function?
     // Display welcome message for users
     if (y == E.screenRows/3) {
       char welcome[80];
@@ -297,7 +307,7 @@ void editorDrawRows(struct abuf *ab) {
 
 void editorRefreshScreen() {
   // do not think "\x1b[?25 is supported in our termial, so leaving it commented out"
-  struct abuf ab = ABUF_INIT;
+  Abuf ab = ABUF_INIT;
   // abAppend(&ab, "\1xb[?25l", 6);
   abAppend(&ab, "\x1b[H", 3);
 
@@ -319,7 +329,9 @@ void initEditor() {
   E.cx = 0;
   E.cy = 0;
 
-  if (getWindowSize(&E.screenRows, &E.screenCols) == -1) die("getWindowSize");
+  if (getWindowSize(&E.screenRows, &E.screenCols) == -1) {
+    die("getWindowSize");
+  }
 }
 
 int main() {

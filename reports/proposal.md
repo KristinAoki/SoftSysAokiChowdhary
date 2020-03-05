@@ -18,6 +18,8 @@ The main resource we're planning to utilize throughout this project is this tuto
 
 Other resources that we will consult (related to the tutorial):
 * [Documentation for the termios struct](http://man7.org/linux/man-pages/man3/termios.3.html)
+* [Wikipedia article about escape sequences in C](https://en.wikipedia.org/wiki/Escape_sequences_in_C)
+* [VT100 User Guide for more info about escape sequences](https://vt100.net/docs/vt100-ug/chapter3.html)
 
 ## First Steps
 1. Read through the Kilo tutorial and gain understanding of the different parts
