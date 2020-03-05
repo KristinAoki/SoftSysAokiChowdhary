@@ -1,4 +1,9 @@
 /*** includes ***/
+// Added in case compiler complains about the function get_line
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
@@ -29,9 +34,9 @@ enum editorKey {
 
 /*** data ***/
 // Stores a line of text as a pointer
-type def struct erow {
+typedef struct erow {
   int size;
-  char *s
+  char *chars;
 } erow;
 
 // Structure to represent the editor state
@@ -47,13 +52,9 @@ typedef struct editorConfig {
   int screenRows;
   int screenCols;
   int cx, cy;
-<<<<<<< HEAD
   int numrows;
   erow row;
-} editor;
-=======
 } Editor;
->>>>>>> d825440131d3f2cffd6af11d8ccb955521ecf49a
 
 Editor E;
 
@@ -206,15 +207,29 @@ int getWindowSize(int *rows, int *cols) {
   }
 }
 /*** file i/o ***/
-void editorOpen() {
-  char *line = "Hello, world!";
-  ssize_t linelen = 13;
+void editorOpen(char *filename) {
+  // Open and read a given file
+  FILE *fp = fopen(filename, "r");
+  char *line = NULL;
+  size_t linecap = 0;
+  ssize_t linelen;
+  linelen = getline(&line, &linecap, fp);
+  // Determine if you are at the end of the file
+  if (linelen!= -1) {
+    // Decrease the length of linelen while it is greater than zero and the
+    // last character in the line is a newline character or a return character.
+    while (linelen > 0 && (line[linelen-1] == '\n' || line[linelen - 1] == '\r')) {
+      linelen--;
+    }
 
-  E.row.size = linelen;
-  E.row.charss = malloc (linelen + 1);
-  memcpy(E.row.chars, line, linelen);
-  E.row.chars[linelen] = '\0';
-  E.numrows = 1;
+    E.row.size = linelen;
+    E.row.chars = malloc (linelen + 1);
+    memcpy(E.row.chars, line, linelen);
+    E.row.chars[linelen] = '\0';
+    E.numrows = 1;
+  }
+  free(line);
+  fclose(fp);
 }
 /*** input ***/
 void editorMoveCursor(int key) {
@@ -292,10 +307,10 @@ void editorProcessKeypress() {
 void editorDrawRows(Abuf *ab) {
 
   for (int y = 0; y < E.screenRows; y++) {
-<<<<<<< HEAD
+
     if (y >= E.numrows){
       // Display welcome message for users
-      if (y == E.screenRows/3) {
+      if (E.numrows == 0 && y == E.screenRows/3) {
         char welcome[80];
         int welcomelen = snprintf(welcome, sizeof(welcome),
             "Nucleus Editor -- version %s", NUCLEUS_VERSION);
@@ -316,28 +331,12 @@ void editorDrawRows(Abuf *ab) {
         abAppend(ab, welcome, welcomelen);
       } else {
         // Draw a column of tildes on the lefthand side of the screen
-=======
-
-    // Display welcome message for users
-    if (y == E.screenRows/3) {
-      char welcome[80];
-      int welcomelen = snprintf(welcome, sizeof(welcome),
-          "Nucleus Editor -- version %s", NUCLEUS_VERSION);
-      if (welcomelen > E.screenCols) {
-        welcomelen = E.screenCols;
-      }
-
-      // Center welcome message
-      // Find the center of the screen
-      int padding = (E.screenCols - welcomelen)/2;
-      if (padding) {
->>>>>>> d825440131d3f2cffd6af11d8ccb955521ecf49a
         abAppend(ab, "~", 1);
       }
     } else {
       int len = E.row.size;
       if (len > E.screenCols) {
-        len = E.screenCols
+        len = E.screenCols;
       }
       abAppend(ab, E.row.chars, len);
     }
@@ -382,12 +381,14 @@ void initEditor() {
   }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
   /* Want to disable canonical mode and turn on raw mode so that we can process
   each keypress as it comes in */
   enableRawMode();
   initEditor();
-  editorOpen();
+  if (argc >= 2) {
+    editorOpen(argv[1]);
+  }
 
   // Keeps reading while there are more bytes to read and
   // while the user hasn't pressed q
