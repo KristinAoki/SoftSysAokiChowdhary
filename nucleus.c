@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <string.h>
 
 /*** defines ***/
@@ -26,6 +27,12 @@ enum editorKey {
 };
 
 /*** data ***/
+// Stores a line of text as a pointer
+type def struct erow {
+  int size;
+  char *s
+} erow;
+
 // Structure to represent the editor state
 typedef struct editorConfig {
   // Structure to represent the terminal
@@ -33,6 +40,8 @@ typedef struct editorConfig {
   int screenRows;
   int screenCols;
   int cx, cy;
+  int numrows;
+  erow row;
 } editor;
 
 editor E;
@@ -181,7 +190,17 @@ int getWindowSize(int *rows, int *cols) {
     return 0;
   }
 }
+/*** file i/o ***/
+void editorOpen() {
+  char *line = "Hello, world!";
+  ssize_t linelen = 13;
 
+  E.row.size = linelen;
+  E.row.charss = malloc (linelen + 1);
+  memcpy(E.row.chars, line, linelen);
+  E.row.chars[linelen] = '\0';
+  E.numrows = 1;
+}
 /*** input ***/
 void editorMoveCursor(int key) {
   switch (key) {
@@ -258,30 +277,39 @@ void editorProcessKeypress() {
 void editorDrawRows(struct abuf *ab) {
 
   for (int y = 0; y < E.screenRows; y++) {
-    // Display welcome message for users
-    if (y == E.screenRows/3) {
-      char welcome[80];
-      int welcomelen = snprintf(welcome, sizeof(welcome),
-          "Nucleus Editor -- version %s", NUCLEUS_VERSION);
-      if (welcomelen > E.screenCols) {
-        welcomelen = E.screenCols;
-      }
-      // Center welcome message
-      // Find the center of the screen
-      int padding = (E.screenCols - welcomelen)/2;
-      if (padding) {
+    if (y >= E.numrows){
+      // Display welcome message for users
+      if (y == E.screenRows/3) {
+        char welcome[80];
+        int welcomelen = snprintf(welcome, sizeof(welcome),
+            "Nucleus Editor -- version %s", NUCLEUS_VERSION);
+        if (welcomelen > E.screenCols) {
+          welcomelen = E.screenCols;
+        }
+        // Center welcome message
+        // Find the center of the screen
+        int padding = (E.screenCols - welcomelen)/2;
+        if (padding) {
+          abAppend(ab, "~", 1);
+          // Deleting padding
+          padding--;
+        }
+        while (padding--) {
+          abAppend(ab, " ", 1);
+        }
+        abAppend(ab, welcome, welcomelen);
+      } else {
+        // Draw a column of tildes on the lefthand side of the screen
         abAppend(ab, "~", 1);
-        // Deleting padding
-        padding--;
       }
-      while (padding--) {
-        abAppend(ab, " ", 1);
-      }
-      abAppend(ab, welcome, welcomelen);
     } else {
-      // Draw a column of tildes on the lefthand side of the screen
-      abAppend(ab, "~", 1);
+      int len = E.row.size;
+      if (len > E.screenCols) {
+        len = E.screenCols
+      }
+      abAppend(ab, E.row.chars, len);
     }
+
 
     // Clears lines one at a time
     abAppend(ab, "\x1b[K", 3);
@@ -315,6 +343,7 @@ void initEditor() {
   // Set original placement of the cursor
   E.cx = 0;
   E.cy = 0;
+  E.numrows = 0;
 
   if (getWindowSize(&E.screenRows, &E.screenCols) == -1) die("getWindowSize");
 }
@@ -324,6 +353,7 @@ int main() {
   each keypress as it comes in */
   enableRawMode();
   initEditor();
+  editorOpen();
 
   // Keeps reading while there are more bytes to read and
   // while the user hasn't pressed q
