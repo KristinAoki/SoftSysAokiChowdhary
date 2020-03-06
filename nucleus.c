@@ -126,7 +126,7 @@ int editorReadKey() {
   if (c == '\x1b') {
     char seq[3];
 
-    /* ead the next two bytes into the seq buffer, and return the Escape key
+    /* Read the next two bytes into the seq buffer, and return the Escape key
     if either of these reads times out (assuming that the user pressed the
   Escape key). */
     if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
@@ -138,6 +138,11 @@ int editorReadKey() {
         // Attempt to read another byte and if there's nothing,
         // assume escape key
         if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
+
+        // A tilde indicates one of the following keys
+        // HOME_KEY and END_KEY are handled multiple times because there
+        // are multiple possible escape sequences that map to these keys,
+        // depending on the OS or terminal emulator.
         if (seq[2] =='~') {
           switch (seq[1]) {
             case '1': return HOME_KEY;
@@ -146,7 +151,6 @@ int editorReadKey() {
             // PAGE_UP and PAGE_DOWN = <esc>[5~, <esc>[6~
             case '5': return PAGE_UP;
             case '6': return PAGE_DOWN;
-            // WHY DO I ADD THESE TWICE????
             case '7': return HOME_KEY;
             case '8': return END_KEY;
           }
@@ -163,12 +167,10 @@ int editorReadKey() {
           case 'B': return ARROW_DOWN;
           case 'C': return ARROW_RIGHT;
           case 'D': return ARROW_LEFT;
-          // WHY DO I ADD THESE HERE IF I ALREADY ACCOUNTED FOR THEM ABOVE???
           case 'H': return HOME_KEY;
           case 'F': return END_KEY;
         }
       }
-      // WHY DO I ADD THESE???
     } else if (seq[0] == 'O') {
       switch (seq[1]) {
         case 'H': return HOME_KEY;
