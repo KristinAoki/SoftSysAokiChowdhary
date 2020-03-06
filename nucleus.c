@@ -1,4 +1,9 @@
 /*** includes ***/
+// Added in case compiler complains about the function get_line
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
@@ -6,6 +11,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <string.h>
 
 /*** defines ***/
@@ -27,6 +33,12 @@ enum editorKey {
 };
 
 /*** data ***/
+// Stores a line of text as a pointer
+typedef struct erow {
+  int size;
+  char *chars;
+} erow;
+
 // Structure to represent the editor state
 /* struct fields:
 - struct termios orig_termios - termios object that represents the terminal
@@ -40,6 +52,8 @@ typedef struct editorConfig {
   int screenRows;
   int screenCols;
   int cx, cy;
+  int numrows;
+  erow row;
 } Editor;
 
 Editor E;
@@ -194,7 +208,31 @@ int getWindowSize(int *rows, int *cols) {
     return 0;
   }
 }
+/*** file i/o ***/
+void editorOpen(char *filename) {
+  // Open and read a given file
+  FILE *fp = fopen(filename, "r");
+  char *line = NULL;
+  size_t linecap = 0;
+  ssize_t linelen;
+  linelen = getline(&line, &linecap, fp);
+  // Determine if you are at the end of the file
+  if (linelen!= -1) {
+    // Decrease the length of linelen while it is greater than zero and the
+    // last character in the line is a newline character or a return character.
+    while (linelen > 0 && (line[linelen-1] == '\n' || line[linelen - 1] == '\r')) {
+      linelen--;
+    }
 
+    E.row.size = linelen;
+    E.row.chars = malloc (linelen + 1);
+    memcpy(E.row.chars, line, linelen);
+    E.row.chars[linelen] = '\0';
+    E.numrows = 1;
+  }
+  free(line);
+  fclose(fp);
+}
 /*** input ***/
 void editorMoveCursor(int key) {
   switch (key) {
@@ -272,31 +310,39 @@ void editorDrawRows(Abuf *ab) {
 
   for (int y = 0; y < E.screenRows; y++) {
 
-    // Display welcome message for users
-    if (y == E.screenRows/3) {
-      char welcome[80];
-      int welcomelen = snprintf(welcome, sizeof(welcome),
-          "Nucleus Editor -- version %s", NUCLEUS_VERSION);
-      if (welcomelen > E.screenCols) {
-        welcomelen = E.screenCols;
-      }
-
-      // Center welcome message
-      // Find the center of the screen
-      int padding = (E.screenCols - welcomelen)/2;
-      if (padding) {
+    if (y >= E.numrows){
+      // Display welcome message for users
+      if (E.numrows == 0 && y == E.screenRows/3) {
+        char welcome[80];
+        int welcomelen = snprintf(welcome, sizeof(welcome),
+            "Nucleus Editor -- version %s", NUCLEUS_VERSION);
+        if (welcomelen > E.screenCols) {
+          welcomelen = E.screenCols;
+        }
+        // Center welcome message
+        // Find the center of the screen
+        int padding = (E.screenCols - welcomelen)/2;
+        if (padding) {
+          abAppend(ab, "~", 1);
+          // Deleting padding
+          padding--;
+        }
+        while (padding--) {
+          abAppend(ab, " ", 1);
+        }
+        abAppend(ab, welcome, welcomelen);
+      } else {
+        // Draw a column of tildes on the lefthand side of the screen
         abAppend(ab, "~", 1);
-        // Deleting padding
-        padding--;
       }
-      while (padding--) {
-        abAppend(ab, " ", 1);
-      }
-      abAppend(ab, welcome, welcomelen);
     } else {
-      // Draw a column of tildes on the lefthand side of the screen
-      abAppend(ab, "~", 1);
+      int len = E.row.size;
+      if (len > E.screenCols) {
+        len = E.screenCols;
+      }
+      abAppend(ab, E.row.chars, len);
     }
+
 
     // Clears lines one at a time
     abAppend(ab, "\x1b[K", 3);
@@ -330,17 +376,21 @@ void initEditor() {
   // Set original placement of the cursor
   E.cx = 0;
   E.cy = 0;
+  E.numrows = 0;
 
   if (getWindowSize(&E.screenRows, &E.screenCols) == -1) {
     die("getWindowSize");
   }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
   /* Want to disable canonical mode and turn on raw mode so that we can process
   each keypress as it comes in */
   enableRawMode();
   initEditor();
+  if (argc >= 2) {
+    editorOpen(argv[1]);
+  }
 
   // Keeps reading while there are more bytes to read and
   // while the user hasn't pressed q
