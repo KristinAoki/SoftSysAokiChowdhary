@@ -37,7 +37,7 @@ enum editorKey {
 typedef struct erow {
   int size;
   char *chars;
-} erow;
+} Erow;
 
 // Structure to represent the editor state
 /* struct fields:
@@ -45,6 +45,10 @@ typedef struct erow {
 - int screenRows - the number of rows on the screen
 - int screenCols - the number of columns on the screen
 - int cx, cy - the x & y coordinates of the cursor
+- int numRows - the number of rows to text
+- Erow *erow - an array of rows
+- int rowoff - the offset variable, which keeps track of the row
+the user is currently scrolled to
 */
 typedef struct editorConfig {
   // Structure to represent the terminal
@@ -53,7 +57,8 @@ typedef struct editorConfig {
   int screenCols;
   int cx, cy;
   int numrows;
-  erow row;
+  Erow *row;
+  int rowoff;
 } Editor;
 
 Editor E;
@@ -208,27 +213,41 @@ int getWindowSize(int *rows, int *cols) {
     return 0;
   }
 }
+
+/*** row operations ***/
+/*
+Adds a row of given text s to the editor, by allocating space for a new
+row and then copying the given string s to a new row at the end of the array
+of rows.
+*/
+void editorAppendRow(char *s, size_t len) {
+  E.row = realloc(E.row, sizeof(Erow)*(E.numrows + 1));
+  int idx = E.numrows;
+  E.row[idx].size = len;
+  E.row[idx].chars = malloc(len+1);
+  memcpy(E.row[idx].chars, s, len);
+  E.row[idx].chars[len] = '\0';
+  E.numrows++;
+}
+
 /*** file i/o ***/
 void editorOpen(char *filename) {
   // Open and read a given file
   FILE *fp = fopen(filename, "r");
+  if (!fp) {
+    die("fopen");
+  }
   char *line = NULL;
   size_t linecap = 0;
   ssize_t linelen;
-  linelen = getline(&line, &linecap, fp);
-  // Determine if you are at the end of the file
-  if (linelen!= -1) {
+  // Keep reading the file until you reach the end of the file
+  while ((linelen = getline(&line, &linecap, fp)) != -1) {
     // Decrease the length of linelen while it is greater than zero and the
     // last character in the line is a newline character or a return character.
     while (linelen > 0 && (line[linelen-1] == '\n' || line[linelen - 1] == '\r')) {
       linelen--;
     }
-
-    E.row.size = linelen;
-    E.row.chars = malloc (linelen + 1);
-    memcpy(E.row.chars, line, linelen);
-    E.row.chars[linelen] = '\0';
-    E.numrows = 1;
+    editorAppendRow(line, linelen);
   }
   free(line);
   fclose(fp);
@@ -257,7 +276,7 @@ void editorMoveCursor(int key) {
       break;
     case ARROW_DOWN:
       // Check if you are at the bottom of the window
-      if (E.cy != E.screenRows - 1) {
+      if (E.cy < E.numrows) {
         E.cy++;
       }
       break;
@@ -306,11 +325,22 @@ void editorProcessKeypress() {
 }
 
 /*** output ***/
+void editorScroll() {
+  // If the cursor is above visible window, then scroll up to where cursor is
+  if (E.cy < E.rowoff) {
+    E.rowoff = E.cy;
+  }
+  // If cursor is past bottom of visible window, then scroll down
+  if (E.cy >= E.rowoff + E.screenRows) {
+    E.rowoff = E.cy - E.screenRows + 1;
+  }
+}
+
 void editorDrawRows(Abuf *ab) {
-
   for (int y = 0; y < E.screenRows; y++) {
-
-    if (y >= E.numrows){
+    // Get the row of the file that you want to display at each y position
+    int filerow = y + E.rowoff;
+    if (filerow >= E.numrows){
       // Display welcome message for users
       if (E.numrows == 0 && y == E.screenRows/3) {
         char welcome[80];
@@ -336,11 +366,11 @@ void editorDrawRows(Abuf *ab) {
         abAppend(ab, "~", 1);
       }
     } else {
-      int len = E.row.size;
+      int len = E.row[filerow].size;
       if (len > E.screenCols) {
         len = E.screenCols;
       }
-      abAppend(ab, E.row.chars, len);
+      abAppend(ab, E.row[filerow].chars, len);
     }
 
 
@@ -354,6 +384,7 @@ void editorDrawRows(Abuf *ab) {
 }
 
 void editorRefreshScreen() {
+  editorScroll();
   // do not think "\x1b[?25 is supported in our termial, so leaving it commented out"
   Abuf ab = ABUF_INIT;
   // abAppend(&ab, "\1xb[?25l", 6);
@@ -362,7 +393,7 @@ void editorRefreshScreen() {
   editorDrawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy +1, E.cx + 1 );
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy-E.rowoff) +1, E.cx + 1 );
   abAppend(&ab, buf, strlen(buf));
   // abAppend(&ab, "\1xb[?25h", 6);
 
@@ -377,6 +408,7 @@ void initEditor() {
   E.cx = 0;
   E.cy = 0;
   E.numrows = 0;
+  E.row = NULL;
 
   if (getWindowSize(&E.screenRows, &E.screenCols) == -1) {
     die("getWindowSize");
