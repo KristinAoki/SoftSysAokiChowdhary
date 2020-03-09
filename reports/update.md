@@ -42,3 +42,6 @@ In the next few steps of the tutorial, we are going to implement the following f
 One major improvement that we are thinking of implementing is separating some of the functionality into separate files. We believe that this exercise will also help us learn how to work with multiple C files and practice proper modular design. We plan to restructure the code into various C files after we have completed the tutorial, as this exercise will also help us ensure that we actually completely understand the tutorial.
 
 We aim to complete these tasks over the course of two sprints. We have divided each step of the tutorial and all the substeps in each step between both of us; typically, whenever one person completes their part, the other person reviews the tutorial and code and writes documentation to understand exactly how that part functions. This process has worked well for us so far and we plan to continue using it.
+
+# View our progress
+You can view our progress by looking at [https://trello.com/invite/b/ivckh21R/4cce2fc4458a864264d375a96c15e9f0/nucleous-text-editor](our Trello) and [https://github.com/KristinAoki/SoftSysAokiChowdhary](our Github).
