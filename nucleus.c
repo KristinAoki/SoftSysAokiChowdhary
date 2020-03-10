@@ -59,6 +59,7 @@ typedef struct editorConfig {
   int numrows;
   Erow *row;
   int rowoff;
+  int coloff;
 } Editor;
 
 Editor E;
@@ -79,6 +80,9 @@ void die(const char *s) {
   exit(1);
 }
 
+/*
+Adds a string to the buffer.
+*/
 void abAppend(Abuf *ab, const char *s, int len) {
   char *new = realloc(ab->b, ab->len + len);
   if (new == NULL) return;
@@ -254,18 +258,25 @@ void editorOpen(char *filename) {
 }
 /*** input ***/
 void editorMoveCursor(int key) {
+  // Gets the current row that the cursor is on, or sets the current row to null
+  Erow* row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
   switch (key) {
     // Determine which was to more cursor depending on which key you press.
     case ARROW_LEFT:
       // Check if you are at the left edge of window
-      if (E.cx != 0) {
+      if (row && E.cx != 0) {
         E.cx--;
+      } else if (E.cy > 0) {
+        E.cy--;
+        E.cx = E.row[E.cy].size;
       }
       break;
     case ARROW_RIGHT:
-      // Check if you are at the right edge of window
-      if (E.cx != E.screenCols - 1) {
-      E.cx++;
+      if (row && E.cx < row->size) {
+        E.cx++;
+      } else if (row && E.cx == row->size) {
+        E.cy++;
+        E.cx = 0;
       }
       break;
     case ARROW_UP:
@@ -280,6 +291,13 @@ void editorMoveCursor(int key) {
         E.cy++;
       }
       break;
+  }
+
+  // TODO: Refactor to a function? getCurrentRow?
+  row = (E.cy >= E.numrows) ? NULL : & E.row[E.cy];
+  int rowlen = row ? row->size : 0;
+  if (E.cx > rowlen) {
+    E.cx = rowlen;
   }
 }
 /*
@@ -334,6 +352,13 @@ void editorScroll() {
   if (E.cy >= E.rowoff + E.screenRows) {
     E.rowoff = E.cy - E.screenRows + 1;
   }
+
+  if (E.cx < E.coloff) {
+    E.coloff = E.cx;
+  }
+  if (E.cx >= E.coloff + E.screenCols) {
+    E.coloff = E.cx - E.screenCols + 1;
+  }
 }
 
 void editorDrawRows(Abuf *ab) {
@@ -366,11 +391,15 @@ void editorDrawRows(Abuf *ab) {
         abAppend(ab, "~", 1);
       }
     } else {
-      int len = E.row[filerow].size;
+      int len = E.row[filerow].size - E.coloff;
+      // User scrolled past the end of the line
+      if (len < 0) {
+        len = 0;
+      }
       if (len > E.screenCols) {
         len = E.screenCols;
       }
-      abAppend(ab, E.row[filerow].chars, len);
+      abAppend(ab, &E.row[filerow].chars[E.coloff], len);
     }
 
 
@@ -393,7 +422,7 @@ void editorRefreshScreen() {
   editorDrawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy-E.rowoff) +1, E.cx + 1 );
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy-E.rowoff) +1, (E.cx - E.coloff) + 1 );
   abAppend(&ab, buf, strlen(buf));
   // abAppend(&ab, "\1xb[?25h", 6);
 
@@ -409,6 +438,8 @@ void initEditor() {
   E.cy = 0;
   E.numrows = 0;
   E.row = NULL;
+  E.rowoff = 0;
+  E.coloff = 0;
 
   if (getWindowSize(&E.screenRows, &E.screenCols) == -1) {
     die("getWindowSize");
