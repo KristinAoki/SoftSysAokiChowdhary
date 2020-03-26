@@ -606,7 +606,7 @@ void editorDrawStatusBar(Abuf *ab) {
       break;
     } else {
       abAppend(ab, " ", 1);
-      len++
+      len++;
     }
   }
   // Resets colors
