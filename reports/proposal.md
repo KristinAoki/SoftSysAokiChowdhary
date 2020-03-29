@@ -1,4 +1,5 @@
 # nucleus: a diy text editor
+## Shreya Chowdhary and Kristin Aoki
 
 # Project Goal
 
