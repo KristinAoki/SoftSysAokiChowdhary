@@ -34,3 +34,9 @@ When we refresh the screen, we scroll the editor to the correct position. Then w
 One design decision that we made was representing the rows in the editor as an array of `Erow` objects. An alternative structure could've been using a doubly linked list to represent the rows. This might've been beneficial especially in deleting or inserting rows if we were given a specific row. However, it would've made it more difficult to access a specific row, which was a necessary functionality as we wanted to allow the user to be able to freely navigate the contents of the editor. In order to do that with a linked list, we would need to have a pointer storing the current row, in which case we would be growing closer and closer to essentially implementing an array. Therefore, an array ended up being the better design for our needs.
 
 Please note that we do not have many design decisions that we made because we were following a tutorial. Since a major learning goal for our project was to learn C it makes sense that we followed the design decisions of the tutorial. Even though we did not make the design decisions we carefully read about the decisions of the tutorial creator, so that way in the future we know how to make similar decisions.
+
+# Reflection
+
+Shreya:
+
+Kristin:
