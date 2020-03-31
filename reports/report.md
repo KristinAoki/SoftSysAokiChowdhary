@@ -35,8 +35,7 @@ Please note that we do not have many design decisions that we made because we we
 
 One design decision that the tutorial made was representing the rows in the editor as an array of `Erow` objects. An alternative structure could've been using a doubly linked list to represent the rows. This might've been beneficial especially in deleting or inserting rows if we were given a specific row. However, it would've made it more difficult to access a specific row, which was a necessary functionality as we wanted to allow the user to be able to freely navigate the contents of the editor. In order to do that with a linked list, we would need to have a pointer storing the current row, in which case we would be growing closer and closer to essentially implementing an array. Therefore, an array ended up being the better design.
 
-Another possible design decision could've been creating prototype-based objects for all the structs, especially the Editor and Erow structs. This might've been a good idea because each of these objects had a distinct set of functions specific to these objects.
-
+Another possible design decision could've been creating prototype-based objects for all the structs, especially the Editor and Erow structs. This might've been a good idea because each of these objects had a distinct set of functions specific to these objects. A future extension could be to implement this structure and then also separate the Editor and Erow structs to different header files to essentially create a library for acting with these structures. This could be helpful if someone wanted to build upon this editor and create, for example, a collaborative editor, or add other features to the editor.
 
 
 # Reflection
