@@ -40,6 +40,6 @@ Another possible design decision could've been creating prototype-based objects 
 
 # Reflection
 
-Shreya:
+Shreya: I feel like this project met and even exceeded my goals. I had to become very familiar with memory allocation and pointers given the number of different structures that were used in the editor. I also learned about a lot of functions of C that I hadn't expected to learn about, like escape sequences. I feel very comfortable with working with structs that interact in complex ways now, which is a useful skill to have developed.
 
 Kristin:
