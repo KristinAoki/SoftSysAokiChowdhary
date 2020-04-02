@@ -42,4 +42,4 @@ Another possible design decision could've been creating prototype-based objects 
 
 Shreya: I feel like this project met and even exceeded my goals. I had to become very familiar with memory allocation and pointers given the number of different structures that were used in the editor. I also learned about a lot of functions of C that I hadn't expected to learn about, like escape sequences. I feel very comfortable with working with structs that interact in complex ways now, which is a useful skill to have developed.
 
-Kristin:
+Kristin: I believe that I met my learning goals for this project. Throughout the project my C knowledge was challenged and improved. It was really nice when the functions that we created were the came things that we were learning about in class at the same time. This allowed me to have a better understanding of the concepts in class. This project also allowed me to learn about topics that we did not discuss in class, such as escape sequences.  In addition, it was really cool to see the project come together and make a text editor.
